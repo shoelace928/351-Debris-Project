@@ -4,7 +4,36 @@
     %
 %% AERO351-02 Orbital Debris Clean Up 
 
+%% Station Keeping
 clear all; close all; clc; 
+
+%variable names to keep universal in code:
+%h - angular momentum
+%inc_degrees - inclination in degrees 
+    %inc for radians
+%ecc - eccentricity
+%RAAN_degrees - RAAN in degrees
+    %RAAN for radians
+%arg_degrees - argument of periapse in degrees
+    %arg for radians
+%theta_degrees - true anomaly in degrees
+    %theta in radians
+%Me is mean anomaly
+%n is mean motion
+%orb is number of orbits
+%clarify s/c number with each of the characteristics ex theta1 for s/c 1
+
+%% TLE.txt Conversion and Upload
+        %first convert TLE into a text file 
+%s/c 1 tle
+inc1 = tle1(2,3) * (pi/180) ;   %radians, inclination
+epoch1 = tle1(1,4) ;    %year and day fraction
+RAAN1 = tle1(2,4) * (pi/180) ;  %radians, right ascension of ascending node
+ecc1 = tle1(2,5) ;  %eccentricity, divide by factors of 10 to move decimal to front
+arg1 = tle1(2,6) * (pi/180) ;   %radians, argument of periapse
+Me1 = tle1(2,7) * (pi/180) ;    %radians, mean anomaly at epoch
+n1 = tle1(2,8) ;    %mean motion at epoch
+orb1 = tle1(2,9) ;  %number of orbit at epoch 
 
 %% Lacey's Functions
     %Lambert's Solver
@@ -129,7 +158,7 @@ JD = Jo + (tf/24) ;
       end
       
     %Classical Orbital Elements
-      function [h1, inc_degrees, N1, RAAN_degrees, ecc1, arg_periapse_degrees, theta_degrees] = coes (r,v,mu)
+      function [h1, inc_degrees, N1, RAAN_degrees, ecc1, arg_degrees, theta_degrees] = coes (r,v,mu)
 %State Vector Magnitude 
 r1 = norm(r) ;
 v1 = norm(v);
@@ -181,13 +210,13 @@ y = dot(N,ecc)/(N1*ecc1) ;
        y = acosd(y) ;
     end
     
-arg_periapse = y ;  %argument of periapse in radians
-arg_periapse_degrees = arg_periapse * (180/pi) ;    %argument of periapse in degrees
-    while arg_periapse_degrees < 0
-        arg_periapse_degrees = arg_periapse_degrees + 360 ;
+arg = y ;  %argument of periapse in radians
+arg_degrees = arg * (180/pi) ;    %argument of periapse in degrees
+    while arg_degrees < 0
+        arg_degrees = arg_degrees + 360 ;
     end 
-    while arg_periapse_degrees > 360
-        arg_periapse_degrees = arg_periapse_degrees - 360 ;
+    while arg_degrees > 360
+        arg_degrees = arg_degrees - 360 ;
     end 
 %true anomaly
 z = dot(ecc,r)/(ecc1*r1) ;
