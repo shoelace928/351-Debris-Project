@@ -2,10 +2,11 @@
     % VACUUM - Vehicle And Craft Under Unused Missions
     % Februus - god of purification 
     % Space Custodians
-    % Geonitors 
+    % Geonitors
+    
 %% AERO351-02 Orbital Debris Clean Up 
 
-%% Station Keeping
+%Station Keeping
 clear all; close all; clc; 
 
 %variable names to keep universal in code:
@@ -24,17 +25,17 @@ clear all; close all; clc;
 %orb is number of orbits
 %clarify s/c number with each of the characteristics ex theta1 for s/c 1
 
-%% TLE.txt Conversion and Upload
-        %first convert TLE into a text file 
-%s/c 1 tle
-inc1 = tle1(2,3) * (pi/180) ;   %radians, inclination
-epoch1 = tle1(1,4) ;    %year and day fraction
-RAAN1 = tle1(2,4) * (pi/180) ;  %radians, right ascension of ascending node
-ecc1 = tle1(2,5) ;  %eccentricity, divide by factors of 10 to move decimal to front
-arg1 = tle1(2,6) * (pi/180) ;   %radians, argument of periapse
-Me1 = tle1(2,7) * (pi/180) ;    %radians, mean anomaly at epoch
-n1 = tle1(2,8) ;    %mean motion at epoch
-orb1 = tle1(2,9) ;  %number of orbit at epoch 
+
+%% TLE.txt Upload and Conversion
+        %tle need to be in txt file
+tle = load('Breeze1_tle.txt') ;    %Breeze Rocket Debris at 50.1919 inc in LEO
+[inc1, epoch1, RAAN1, ecc1, arg1, Me1, n1] = tle_convert(tle) ;
+tle = load('Breeze2_tle.txt') ;    %Breeze Rocket Debris at 50.0668 inc in LEO
+[inc2, epoch2, RAAN2, ecc2, arg2, Me2, n2] = tle_convert(tle) ;
+tle = load('Vanguard1_tle.txt') ;  %Vanguard 1 debris in MEO
+[inc3, epoch3, RAAN3, ecc3, arg3, Me3, n3] = tle_convert(tle) ;
+tle = load('Kizuna_tle.txt')  ;    %Kizuna debris in GEO
+[inc4, epoch4, RAAN4, ecc4, arg4, Me4, n4] = tle_convert(tle) ;
 
 %% Lacey's Functions
     %Lambert's Solver
@@ -211,8 +212,8 @@ y = dot(N,ecc)/(N1*ecc1) ;
        y = acosd(y) ;
     end
     
-arg = y ;  %argument of periapse in radians
-arg_degrees = arg * (180/pi) ;    %argument of periapse in degrees
+arg_periapse = y ;  %argument of periapse in radians
+arg_degrees = arg_periapse * (180/pi) ;    %argument of periapse in degrees
     while arg_degrees < 0
         arg_degrees = arg_degrees + 360 ;
     end 
@@ -230,3 +231,38 @@ theta = z ;    %true anomaly in radians
 theta_degrees = theta * (180/pi) ;  %true anomaly in degrees
 
       end
+      
+    %TLE Conversion 
+      function [inc, epoch, RAAN, ecc, arg, Me, n] = tle_convert(tle)
+        inc = tle(2,3) * (pi/180) ;   %radians, inclination
+        epoch = tle(1,4) ;    %year and day fraction
+        RAAN = tle(2,4) * (pi/180) ;  %radians, right ascension of ascending node
+        ecc = tle(2,5) ;  %eccentricity, divide by factors of 10 to move decimal to front
+        arg = tle(2,6) * (pi/180) ;   %radians, argument of periapse
+        Me = tle(2,7) * (pi/180) ;    %radians, mean anomaly at epoch
+        n = tle(2,8) ;    %mean motion at epoch 
+      end 
+      
+        
+        
+       
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+        
