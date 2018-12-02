@@ -24,20 +24,132 @@ clear all; close all; clc;
 %n is mean motion
 %orb is number of orbits
 %clarify s/c number with each of the characteristics ex theta1 for s/c 1
-
+mu = 398600 ; %gravitational constant for earth
 
 %% TLE.txt Upload and Conversion
         %tle need to be in txt file
 tle = load('Breeze1_tle.txt') ;    %Breeze Rocket Debris at 50.1919 inc in LEO
 [inc1, epoch1, RAAN1, ecc1, arg1, Me1, n1] = tle_convert(tle) ;
+[rSat1, vSat1] = TLE_State(RAAN1,arg1,Me1,n1,inc1,ecc1) ;
 tle = load('Breeze2_tle.txt') ;    %Breeze Rocket Debris at 50.0668 inc in LEO
 [inc2, epoch2, RAAN2, ecc2, arg2, Me2, n2] = tle_convert(tle) ;
-tle = load('Vanguard1_tle.txt') ;  %Vanguard 1 debris in MEO
+[rSat2, vSat2] = TLE_State(RAAN2,arg2,Me2,n2,inc2,ecc2) ;
+tle = load('Vanguard1_tle.txt') ;  %Iridium debris in MEO
 [inc3, epoch3, RAAN3, ecc3, arg3, Me3, n3] = tle_convert(tle) ;
+[rSat3, vSat3] = TLE_State(RAAN3,arg3,Me3,n3,inc3,ecc3) ;
 tle = load('Kizuna_tle.txt')  ;    %Kizuna debris in GEO
 [inc4, epoch4, RAAN4, ecc4, arg4, Me4, n4] = tle_convert(tle) ;
+[rSat4, vSat4] = TLE_State(RAAN4,arg4,Me4,n4,inc4,ecc4) ;
 
-%% Lacey's Functions
+%launch date: December 6, 2018 0h UT
+        m_ld = 12 ;
+        d_ld = 6 ;
+        y_ld = 2018 ;
+        tf_ld = 0 ;
+        Jo_ld = 367*y_ld - floor((7*(y_ld+floor((m_ld+9)/12)))/4) + floor((275*m_ld)/9) + d_ld + 1721013.5 ;
+        JD_ld = Jo_ld + (tf_ld/24) ; %julian date for launch
+        
+%tle propagation
+        d = [23 23 1 20] ;
+        m = [11 11 12 11] ;
+        y = [2018 2018 2018 2018] ;
+        tf = [.72026911 .75445815 .63652026 .14468353] ;
+        Jo = 367.*y - floor((7.*(y+floor((m+9)./12)))./4) + floor((275*m)./9) + d + 1721013.5 ;
+        JD = Jo + (tf./24) ; %julian date for launch
+        
+        delta_t = (JD_ld - JD)*24*3600 ;
+        delta_t = [delta_t(3) delta_t(2) delta_t(1) delta_t(4)] ;
+        tspan = delta_t;
+[rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, tspan, mu) ;
+
+    %tle to state
+    function [R,V] = TLE_State(RAAN,OMEGA,ME,MM,INC,ecc)
+
+%Given: RAAN,OMEGA = AoP, ME (Mean Anomaly), Mean Motion = MM, Inc, ecc 
+muearth = 398600;
+tol = 10^-8;
+MM = MM *1/(60^2*24)*2*pi;
+a = (muearth/(MM^2))^(1/3);
+h = sqrt(a*muearth*(1-ecc^2));
+ 
+
+        if ME < pi % finding correct guess for E
+            E = ME + ecc/2;
+        elseif ME > pi 
+            E = ME - ecc/2;
+        end
+        
+        ratio = 1; % sets initial ratio
+        n = 1; % sets initial iteration value
+        
+        while ratio(end) > tol % since ratio values are being stored, end us used
+            ratio(n) = (E(n) - ecc*sin(E(n)) - ME)/(1 - ecc*cos(E(n))); % ratio calc
+            E(n+1) = E(n) - ratio(n); % Calculating E 
+            n = n+1; % increasing iteration value
+        end
+        
+   tantheta2 = (sqrt((1+ecc)/(1-ecc))) * tan((E(end)/2)); % goes into true anomaly calc
+   TA = atan(tantheta2) * 2; % calculates true anomaly (radians)
+   %TA = rad2deg(TA1);
+   
+R_peri = (h^2/muearth)*(1/(1+ecc*cos(TA)))*[cos(TA) sin(TA) 0]; % in the p hat direction 
+V_peri = (muearth/h) * [-sin(TA) ecc+cos(TA) 0]; % in the q hat direction
+
+QxX = [-sin(RAAN)*cos(INC)*sin(OMEGA)+cos(RAAN)*cos(OMEGA)...
+-sin(RAAN)*cos(INC)*cos(OMEGA)-cos(RAAN)*sin(OMEGA) sin(RAAN)...
+*sin(INC); cos(RAAN)*cos(INC)*sin(OMEGA)+sin(RAAN)*cos(OMEGA)...
+cos(RAAN)*cos(INC)*cos(OMEGA)-sin(RAAN)*sin(OMEGA) -cos(RAAN)...
+*sin(INC); sin(INC)*sin(OMEGA) sin(INC)*cos(OMEGA) cos(INC)];
+
+R = transpose(QxX*transpose(R_peri));
+V = transpose(QxX*transpose(V_peri));
+
+
+end
+    %Propagation
+    function [rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, tspan, mu)
+%Propagates orbits over a specific amount of time
+%Input all r and v vectors for satellites 1-4 and the tspan and it will
+%output all the r and v vectors after that amount of time
+
+
+iSat1State = [rSat1(1), rSat1(2), rSat1(3), vSat1(1), vSat1(2), vSat1(3)];
+iSat2State = [rSat2(1), rSat2(2), rSat2(3), vSat2(1), vSat2(2), vSat2(3)];
+iSat3State = [rSat3(1), rSat3(2), rSat3(3), vSat3(1), vSat3(2), vSat3(3)];
+iSat4State = [rSat4(1), rSat4(2), rSat4(3), vSat4(1), vSat4(2), vSat4(3)];
+
+options = odeset('RelTol', 1e-8, 'AbsTol', 1e-8);
+tspan1 = [ 0 tspan(3) ] ;
+[tSat1, Sat1State] = ode45(@twobodymotion, tspan1, iSat1State, options, mu);
+rSat1 = Sat1State(:,1:3);
+vSat1 = Sat1State(:,4:6);
+
+tspan2 = [ 0 tspan(2) ] ;
+[tSat2, Sat2State] = ode45(@twobodymotion, tspan2, iSat2State, options, mu);
+rSat2 = Sat2State(:,1:3);
+vSat2 = Sat2State(:,4:6);
+
+tspan3 = [ 0 tspan(1) ] ;
+[tSat3, Sat3State] = ode45(@twobodymotion, tspan3, iSat3State, options, mu);
+rSat3 = Sat3State(:,1:3);
+vSat3 = Sat3State(:,4:6);
+
+tspan4 = [ 0 tspan(4) ] ;
+[tSat4, Sat4State] = ode45(@twobodymotion, tspan4, iSat4State, options, mu);
+rSat4 = Sat4State(:,1:3);
+vSat4 = Sat4State(:,4:6);
+
+rSat1 = rSat1(end,1:3);
+vSat1 = vSat1(end,1:3);
+rSat2 = rSat2(end,1:3);
+vSat2 = vSat2(end,1:3);
+rSat3 = rSat3(end,1:3);
+vSat3 = vSat3(end,1:3);
+rSat4 = rSat4(end,1:3);
+vSat4 = vSat4(end,1:3);
+
+end
+
     %Lambert's Solver
       function [v1 v2] = lambert(r1,r2, delta_t_given)
 %given r1 and r2, solve for v1 and v2
@@ -235,9 +347,9 @@ theta_degrees = theta * (180/pi) ;  %true anomaly in degrees
     %TLE Conversion 
       function [inc, epoch, RAAN, ecc, arg, Me, n] = tle_convert(tle)
         inc = tle(2,3) * (pi/180) ;   %radians, inclination
-        epoch = tle(1,4) ;    %year and day fraction
+        epoch = num2str(tle(1,4)) ;    %year and day fraction
         RAAN = tle(2,4) * (pi/180) ;  %radians, right ascension of ascending node
-        ecc = tle(2,5) ;  %eccentricity, divide by factors of 10 to move decimal to front
+        ecc = tle(2,5)/10e6 ;  %eccentricity, divide by factors of 10 to move decimal to front
         arg = tle(2,6) * (pi/180) ;   %radians, argument of periapse
         Me = tle(2,7) * (pi/180) ;    %radians, mean anomaly at epoch
         n = tle(2,8) ;    %mean motion at epoch 
