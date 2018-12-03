@@ -356,7 +356,32 @@ theta_degrees = theta * (180/pi) ;  %true anomaly in degrees
       end 
       
         
-        
+      %% Quinn Code for Trey
+% % find common line between planes
+% N2 = cross(rSat2, vSat1)/norm(cross(rSat2, vSat2));
+% N3 = cross(rSat3, vSat3)/norm(cross(rSat3, vSat3));%normal to plane 3
+% Line23 = cross(N2,N3)/norm(cross(N2,N3));
+% PlaneChange23 = acosd(dot(N2,N3));
+% 
+% %True Anamolies on the apse line
+% TA2_apse = acosd(dot(Line23,orbit2.apse));
+% TA3_apse = acosd(dot(Line23,orbit3.apse));
+% 
+% %correction for goin the long way
+% crossy = cross(orbit2.apse,Line23);%sweep from perigee(last burn) to node (next burn)
+% if crossy(3)<0
+%     TA2_apse = 360 - TA2_apse;
+% end
+% 
+% %find time from perigee to apse line
+% time2burn = (TA2_apse*pi/180)/sqrt(mu)*orbit3.ra^(3/2);
+% 
+% %% align the planes (inc and raan change)
+% 
+% 
+% v2 = sqrt(mu/orbit3.ra)*[cosd(PlaneChange23) sind(PlaneChange23)];
+% dv = norm(v1-v2);
+
        
 
 
