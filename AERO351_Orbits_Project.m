@@ -382,6 +382,15 @@ theta_degrees = theta * (180/pi) ;  %true anomaly in degrees
 % v2 = sqrt(mu/orbit3.ra)*[cosd(PlaneChange23) sind(PlaneChange23)];
 % dv = norm(v1-v2);
 
+
+% more code for trey
+% C32 = cosd(PlaneChange23)*eye(3) + (1-cos(PlaneChange23))*Line23'*Line23 - sind(PlaneChange23)*cross(Line23');
+% v2 = (C32*vSat2(end,1:3)')';
+% dv = norm(v2);
+% function wx = cross(w)
+% wx = [0 -w(3) w(2); w(3) 0 -w(1);-w(2) w(1) 0];
+% end
+
        
 
 
