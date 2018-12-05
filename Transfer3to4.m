@@ -471,7 +471,105 @@ ddz = -mue*state(3)/r^3;
 dstatedt = [dx;dy;dz;ddx;ddy;ddz];
 end
 
+%%
+function [inc, epoch, RAAN, ecc, arg, Me, n] = tle_convert(tle)
+        inc = tle(2,3) * (pi/180) ;   %radians, inclination
+        epoch = tle(1,4) ;    %year and day fraction
+        RAAN = tle(2,4) * (pi/180) ;  %radians, right ascension of ascending node
+        ecc = tle(2,5)/10e6 ;  %eccentricity, divide by factors of 10 to move decimal to front
+        arg = tle(2,6) * (pi/180) ;   %radians, argument of periapse
+        Me = tle(2,7) * (pi/180) ;    %radians, mean anomaly at epoch
+        n = tle(2,8) ;    %mean motion at epoch 
+end 
+  
+%%
+function [R,V] = TLE_State(RAAN,OMEGA,ME,MM,INC,ecc)
 
+%Given: RAAN,OMEGA = AoP, ME (Mean Anomaly), Mean Motion = MM, Inc, ecc 
+
+muearth = 398600;
+tol = 10^-8;
+MM = MM *1/(60^2*24)*2*pi;
+a = (muearth/(MM^2))^(1/3);
+h = sqrt(a*muearth*(1-ecc^2));
+ 
+
+        if ME < pi % finding correct guess for E
+            E = ME + ecc/2;
+        elseif ME > pi 
+            E = ME - ecc/2;
+        end
+        
+        ratio = 1; % sets initial ratio
+        n = 1; % sets initial iteration value
+        
+        while ratio(end) > tol % since ratio values are being stored, end us used
+            ratio(n) = (E(n) - ecc*sin(E(n)) - ME)/(1 - ecc*cos(E(n))); % ratio calc
+            E(n+1) = E(n) - ratio(n); % Calculating E 
+            n = n+1; % increasing iteration value
+        end
+        
+   tantheta2 = (sqrt((1+ecc)/(1-ecc))) * tan((E(end)/2)); % goes into true anomaly calc
+   TA = atan(tantheta2) * 2; % calculates true anomaly (radians)
+   %TA = rad2deg(TA1);
+   
+R_peri = h^2/muearth*(1/(1+ecc*cos(TA)))*[cos(TA) sin(TA) 0]; % in the p hat direction 
+V_peri = muearth/h * [-sin(TA) ecc+cos(TA) 0]; % in the q hat direction
+
+QxX = [-sin(RAAN)*cos(INC)*sin(OMEGA)+cos(RAAN)*cos(OMEGA)...
+-sin(RAAN)*cos(INC)*cos(OMEGA)-cos(RAAN)*sin(OMEGA) sin(RAAN)...
+*sin(INC); cos(RAAN)*cos(INC)*sin(OMEGA)+sin(RAAN)*cos(OMEGA)...
+cos(RAAN)*cos(INC)*cos(OMEGA)-sin(RAAN)*sin(OMEGA) -cos(RAAN)...
+*sin(INC); sin(INC)*sin(OMEGA) sin(INC)*cos(OMEGA) cos(INC)];
+
+R = transpose(QxX*transpose(R_peri));
+V = transpose(QxX*transpose(V_peri));
+
+
+end
+
+
+%%
+function [rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, tspan1,tspan2,tspan3,tspan4, mu)
+%Propagates orbits over a specific amount of time
+%Input all r and v vectors for satellites 1-4 and the tspan and it will
+%output all the r and v vectors after that amount of time
+
+
+iSat1State = [rSat1(1), rSat1(2), rSat1(3), vSat1(1), vSat1(2), vSat1(3)];
+iSat2State = [rSat2(1), rSat2(2), rSat2(3), vSat2(1), vSat2(2), vSat2(3)];
+iSat3State = [rSat3(1), rSat3(2), rSat3(3), vSat3(1), vSat3(2), vSat3(3)];
+iSat4State = [rSat4(1), rSat4(2), rSat4(3), vSat4(1), vSat4(2), vSat4(3)];
+
+options = odeset('RelTol', 1e-8, 'AbsTol', 1e-8);
+
+[tSat1,Sat1State] = ode45(@Aero351twobodymotion, tspan1, iSat1State, options, mu);
+rSat1 = Sat1State(:,1:3);
+vSat1 = Sat1State(:,4:6);
+
+[tSat2,Sat2State] = ode45(@Aero351twobodymotion, tspan2, iSat2State, options, mu);
+rSat2 = Sat2State(:,1:3);
+vSat2 = Sat2State(:,4:6);
+
+[tSat3,Sat3State] = ode45(@Aero351twobodymotion, tspan3, iSat3State, options, mu);
+rSat3 = Sat3State(:,1:3);
+vSat3 = Sat3State(:,4:6);
+
+[tSat4,Sat4State] = ode45(@Aero351twobodymotion, tspan4, iSat4State, options, mu);
+rSat4 = Sat4State(:,1:3);
+vSat4 = Sat4State(:,4:6);
+
+
+% rSat1 = rSat1(end,1:3);
+% vSat1 = vSat1(end,1:3);
+% rSat2 = rSat2(end,1:3);
+% vSat2 = vSat2(end,1:3);
+% rSat3 = rSat3(end,1:3);
+% vSat3 = vSat3(end,1:3);
+% rSat4 = rSat4(end,1:3);
+% vSat4 = vSat4(end,1:3);
+
+end
 
 
 
