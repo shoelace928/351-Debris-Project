@@ -131,7 +131,7 @@ H_t = sqrt(Rp_t*muearth*(1+ecc_t));
 a_t = (Ra_t + Rp_t)/2;
 T_t = 2*pi/sqrt(muearth)*(a_t^(3/2));
 
-% N3 and N4 = rev/sec so T3 and T4 are seconds/rev
+% N3 and N4 = rad/sec so T3 and T4 are seconds/rev
 
 T3 = (2*pi/sqrt(muearth))*a3^(3/2);
 T4 = (2*pi/sqrt(muearth))*a4^(3/2);
@@ -163,12 +163,6 @@ curve = animatedline('LineWidth',1.5);
 curve2 = animatedline('LineWidth',1.5);
 
 for i =1:length(State4_peri3)
-%     if i == 1
-% addpoints(curve,State3_peri(i,1),State3_peri(i,2),State3_peri(i,3))
-% head = plot3(State3_peri(i,1),State3_peri(i,2),State3_peri(i,3),'ro');
-% drawnow
-% delete(head)
-%     else
 addpoints(curve,State3_peri(i*5,1),State3_peri(i*5,2),State3_peri(i*5,3))
 head = plot3(State3_peri(i*5,1),State3_peri(i*5,2),State3_peri(i*5,3),'ro');
 drawnow
@@ -286,14 +280,8 @@ R3i_Plane4 = State3_circ(end,(1:3));
 State3i_Orbit4 = [R3i_Plane4,V3_Plane4];
 plot3(R3i_Plane4(1),R3i_Plane4(2),R3i_Plane4(3),'rx');
 
-% for i =1:length(State3_orbit4)
-% addpoints(curve,State3_orbit4(i,1),State3_orbit4(i,2),State3_orbit4(i,3))
-% head4 = plot3(State3_orbit4(i,1),State3_orbit4(i,2),State3_orbit4(i,3),'ro');
-% drawnow
-% delete(head4)
-% view([155 11])
-% end
 
+%Calculate sat4 position after circularization of sc orbit
 T_from40 = Time_to_Rp3 + T_t/2 + (1.852*60*60);
 tspan_from40 = [0 T_from40];
 State4i_from40 = [R4_40,V4_40];
@@ -301,14 +289,6 @@ State4i_from40 = [R4_40,V4_40];
 
 R4_from40 = State4_from40(end,(1:3));
 V4_from40 = State4_from40(end,(4:6));
-
-% for i =1:length(State4_from40)
-% addpoints(curve2,State4_from40(i,1),State4_from40(i,2),State4_from40(i,3))
-% head4 = plot3(State4_from40(i,1),State4_from40(i,2),State4_from40(i,3),'ro');
-% drawnow
-% delete(head4)
-% view([155 11])
-% end
 
 [ ~,~, ~, ~, ~, ~, Theta4_from40 ] = COES_JP(V4_from40,R4_from40,muearth);
 [ ~,~, ~, ~, ~, ~, Theta3_from40 ] = COES_JP(V3_Plane4,State4_40(136,(1:3)),muearth);
