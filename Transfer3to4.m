@@ -104,6 +104,8 @@ figure(2)
 figure(2)
 set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.04, 1, 0.96]);
 hold on
+
+%plot orbits 3 and 4, and positions of 3 and 4 after 40 hours
 plot3(State3_40(:,1),State3_40(:,2),State3_40(:,3))
 plot3(State3_40(end,1),State3_40(end,2),State3_40(end,3),'ro')
 plot3(State4_40(:,1),State4_40(:,2),State4_40(:,3))
@@ -162,12 +164,13 @@ V4_Rp3 = State4_peri3(end,(4:6));
 curve = animatedline('LineWidth',1.5);
 curve2 = animatedline('LineWidth',1.5);
 
+% animation to perigee of orbit 3
 for i =1:length(State4_peri3)
 addpoints(curve,State3_peri(i*5,1),State3_peri(i*5,2),State3_peri(i*5,3))
 head = plot3(State3_peri(i*5,1),State3_peri(i*5,2),State3_peri(i*5,3),'ro');
 drawnow
 delete(head)
-%     end
+
 addpoints(curve2,State4_peri3(i,1),State4_peri3(i,2),State4_peri3(i,3))
 head_4 = plot3(State4_peri3(i,1),State4_peri3(i,2),State4_peri3(i,3),'bo');
 drawnow
@@ -192,6 +195,7 @@ opt2 = odeset('RelTol',1e-8,'AbsTol',1e-8,'MaxStep',490);
 [t3_trans,State_trans] = ode45(@Aero351twobodymotion,tspan_trans,Statei_trans,opt2,muearth);
 [t4_trans,State4_trans] = ode45(@Aero351twobodymotion,tspan_trans,State4_peri3(end,(1:6)),opt2,muearth);
 
+% animation of hohmann transfer
 for i =1:length(State4_trans)
     if i ==1
 addpoints(curve,State_trans(i,1),State_trans(i,2),State_trans(i,3))
@@ -236,7 +240,8 @@ State3i_circ = [R3_tf,V3_circ];
 opt3 = odeset('RelTol',1e-8,'AbsTol',1e-8);%,'MaxStep',30,'Refine',10
 [t3_circ,State3_circ] = ode45(@Aero351twobodymotion,tspan3_circ,State3i_circ,opt3,muearth);
 [t4_circ,State4_circ] = ode45(@Aero351twobodymotion,tspan3_circ,State4_trans(end,(1:6)),opt3,muearth);
-% 
+
+% animation of circularization
 for i =1:length(State3_circ)
 addpoints(curve,State3_circ(i,1),State3_circ(i,2),State3_circ(i,3))
 head3 = plot3(State3_circ(i,1),State3_circ(i,2),State3_circ(i,3),'ro');
@@ -320,7 +325,7 @@ opt3 = odeset('RelTol',1e-8,'AbsTol',1e-8,'MaxStep',300);%
 [t3_phase,State3_phase] = ode45(@Aero351twobodymotion,tspan_phase,State3i_phase,opt3,muearth);
 [t4_phase,State4_phase] = ode45(@Aero351twobodymotion,tspan_phase,State4_from40(end,:),opt3,muearth);
 
-
+%Animation of phase
 for i =1:2:length(State3_phase)
 addpoints(curve,State3_phase(i,1),State3_phase(i,2),State3_phase(i,3))
 head4 = plot3(State3_phase(i,1),State3_phase(i,2),State3_phase(i,3),'ro');
