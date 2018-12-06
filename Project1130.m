@@ -241,18 +241,71 @@ dvPlaneChange23 = norm(v2-vSCb4PlaneChange);
 dv = dv + dvPlaneChange23;
 StateAfterPlaneChange = [SCatPlaneChange(end,1),SCatPlaneChange(end,2),SCatPlaneChange(end,3),v2(1),v2(2),v2(3)];
 
-% FOR VISUAL HELP ONLY
-[tPlaneChange, SCAfterPlaneChange] = ode45(@twobodymotion, [0 40000], StateAfterPlaneChange, options, mu); %find transfer orbit
-[rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, [0 40000], mu);
-figure(6)
-hold on
-earth_sphere
-plot3(SCAfterPlaneChange(:,1),SCAfterPlaneChange(:,2),SCAfterPlaneChange(:,3))
-plot3(rSat3(:,1),rSat3(:,2),rSat3(:,3))
-plot3(SCatPlaneChange(end,1),SCatPlaneChange(end,2),SCatPlaneChange(end,3),'o')
-plot3(rSat3(1,1),rSat3(1,2),rSat3(1,3),'o')
+%time to apoapse of satellite 3
+%find dtheta by doting the apoapse line with the current r
+rApo3 = norm(StateAfterPlaneChange(1:3));
+dTheta2Apo3 = 360 - acosd(dot(-orbit3.apse/norm(orbit3.apse),StateAfterPlaneChange(1:3)/rApo3));
+dTime2Apo3 = (dTheta2Apo3/360)*rApo3^(3/2)*2*pi/sqrt(mu);
 
-legend('Earth', 'Circ Orbit', 'Orbit3')
+%propigate using dTime2Apo3
+t = t + dTime2Apo3;
+[rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, [0 dTime2Apo3], mu);
+[tAtApo3, scAtApo3] = ode45(@twobodymotion, [0 dTime2Apo3], StateAfterPlaneChange, options, mu); %find transfer orbit
+%new state vector
+stateAtApo3 = scAtApo3(end,:);
+
+%now we see that out s/c is trailing satelite 3 by only a few degrees!!!
+%lets calculate our phasing orbit and its period which is equal to the
+%dTimeSat3toApo
+Sat3b4Phase = rv2coes(rSat3(end,:), vSat3(end,:), mu);
+%PhaseTime = to time to apoapse of sat3
+PhaseTime = Sat3b4Phase.P/2+abs(Sat3b4Phase.t_0);
+aPhase = (PhaseTime*sqrt(mu)/2/pi)^(2/3);
+raPhase = Sat3b4Phase.ra;
+rpPhase = 2*aPhase-Sat3b4Phase.ra;
+eccPhase = (raPhase-rpPhase)/(2*aPhase);
+hPhase = sqrt(rpPhase*mu*(1+eccPhase));
+vaPhase = hPhase/raPhase;
+dvPhaseOn = abs(vaPhase-sqrt(mu/raPhase));
+%update dv
+dv = dv + dvPhaseOn;
+statePhaseOn = [stateAtApo3(1:3),stateAtApo3(4:6)/norm(stateAtApo3(4:6))*vaPhase];
+%update time
+t = t + PhaseTime;
+
+%propogate orbits to when s/c meets Sat3
+[tPhase, SCPhase] = ode45(@twobodymotion, [0 PhaseTime], statePhaseOn, options, mu); %find transfer orbit
+[rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, [0 PhaseTime], mu);
+
+dvPhaseOff = abs(norm(SCPhase(end,4:6))-norm(vSat3(end,:)));
+dv = dv + dvPhaseOff;
+
+%new state vector equal to that of Sat 3 after phasing orbit
+statePhaseOff = [rSat3(end,:),vSat3(end,:)];
+
+%propogate orbits to t+40 hours will
+[tWithSat3, scWithSat3] = ode45(@twobodymotion, [t 40*3600], statePhaseOff, options, mu); %find transfer orbit
+[rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, [t 40*3600], mu);
+
+%%%%% JP take over
+
+
+
+
+
+
+% FOR VISUAL HELP ONLY
+% [tPostApo, SCPostApo] = ode45(@twobodymotion, [0 PhaseTime], statePhaseOn, options, mu); %find transfer orbit
+% [rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4] = propagator(rSat1, vSat1, rSat2, vSat2, rSat3, vSat3, rSat4, vSat4, [0 PhaseTime], mu);
+% figure(6)
+% hold on
+% earth_sphere
+% plot3(SCPostApo(:,1),SCPostApo(:,2),SCPostApo(:,3))
+% plot3(rSat3(:,1),rSat3(:,2),rSat3(:,3))
+% plot3(stateAtApo3(end,1),stateAtApo3(end,2),stateAtApo3(end,3),'o')
+% plot3(rSat3(end,1),rSat3(end,2),rSat3(end,3),'o')
+% 
+% legend('Earth', 'Circ Orbit', 'Orbit3')
 
 
 % v2 = sqrt(mu/orbit3.ra)*[cosd(PlaneChange23) sind(PlaneChange23)];
